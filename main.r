@@ -28,7 +28,7 @@ output_query <- (getResults(query))
 # # print(output)
 # print(length(output))
 
-samples <- output_query$cases[1:300]
+samples <- output_query$cases[1:10]
 
 gliomas_query <- GDCquery(
     project = "CPTAC-3",
@@ -42,4 +42,6 @@ gliomas_query <- GDCquery(
 
 output <- getResults(gliomas_query)
 # write.table(output, file="res.csv", sep = ",", row.names=FALSE)
-length(output)
+length(samples)
+
+# GDCdownload(gliomas_query)
