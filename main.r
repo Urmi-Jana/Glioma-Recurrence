@@ -1,16 +1,14 @@
 library(DESeq2)
 library(TCGAbiolinks)
 
-clinical_data <- GDCquery_clinic("CPTAC-3")
+clinical_data <- GDCquery_clinic("CPTAC-3", type = "clinical")
 data <- clinical_data[clinical_data$primary_site=='Brain',]
 # print(data[1:10, 1:5])
-any(colnames(data) %in% c("progression_or_recurrence"))
-# print(colnames(data))
-empty_columns <- colSums(is.na(data)) == 0
-data2 <- data[, !empty_columns]
+which(colnames(data) %in% c("progression_or_recurrence"))
 
-# data2 <- data2[, c('submitter_id','progression_or_recurrence')]
-# data2 <- data2[rowSums(is.na(data2)) == 0,]
+data2 <- data[, c(2,79)]
+data2 <- data2[rowSums(is.na(data2)) == 0,]
+data2 <- data2[!data2$progression_or_recurrence=='not reported',]
 
 query <- GDCquery(
     project = "CPTAC-3",
@@ -22,13 +20,11 @@ query <- GDCquery(
 )
 
 output_query <- (getResults(query))
+all(data2$submitter_id %in% output_query$cases.submitter_id)
 
-data <- GDCprepare(gliomas_query, summarizedExperiment = TRUE)
-# output <- apply(output_query,2,as.character)
-# # print(output)
-# print(length(output))
+gliomas_query_data<- output_query[output_query$cases.submitter_id %in% data2$submitter_id,]
 
-# samples <- output_query$cases[1:20]
+samples <- gliomas_query_data$cases
 
 gliomas_query <- GDCquery(
     project = "CPTAC-3",
@@ -40,16 +36,14 @@ gliomas_query <- GDCquery(
     barcode = samples,
 )
 
-output <- getResults(gliomas_query)
-length(samples)
+GDCdownload(gliomas_query)
+gliomas_data <- GDCprepare(query, summarizedExperiment = TRUE)
 
-# GDCdownload(gliomas_query)
-gliomas_data <- GDCprepare(gliomas_query, summarizedExperiment = TRUE)
-
-df <- gliomas_data[gliomas_data$primary_diagnosis=='Glioblastoma']
-
+data2$cases <- samples
+data2 <- data2[, c(3, 2)]
+colnames(df) <- c('','id', 'recurrence')
 # count matrix
 gliomas_data_assay <- assay(gliomas_data, 'unstranded')
-# write.table(gliomas_data_assay, file="assay.csv", sep = ",", row.names=FALSE)
+write.table(gliomas_data_assay, file="counts.csv", sep = ",", row.names=FALSE)
 
-all("C3L-02544" %in% data$submitter_id)
+
