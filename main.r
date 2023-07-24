@@ -36,14 +36,21 @@ gliomas_query <- GDCquery(
     barcode = samples,
 )
 
-GDCdownload(gliomas_query)
-gliomas_data <- GDCprepare(query, summarizedExperiment = TRUE)
+# GDCdownload(gliomas_query)
+gliomas_data <- GDCprepare(gliomas_query, summarizedExperiment = TRUE)
 
-data2$cases <- samples
-data2 <- data2[, c(3, 2)]
-colnames(df) <- c('','id', 'recurrence')
 # count matrix
 gliomas_data_assay <- assay(gliomas_data, 'unstranded')
-write.table(gliomas_data_assay, file="counts.csv", sep = ",", row.names=FALSE)
+
+gene_metadata <- as.data.frame(rowData(gliomas_data))
+coldata <- as.data.frame(colData(gliomas_data))
 
 
+write.table(coldata, file="coldata.csv", sep = ",", row.names=FALSE)
+
+all(rownames(coldata) %in% colnames(gliomas_data_assay))
+
+dds <- DESeqDataSetFromMatrix(
+  countData=gliomas_data_assay,
+  colData=coldata,
+  design=~progression_or_recurrence)
