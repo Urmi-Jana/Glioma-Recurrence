@@ -44,9 +44,9 @@ gliomas_data_assay <- assay(gliomas_data, 'unstranded')
 
 gene_metadata <- as.data.frame(rowData(gliomas_data))
 coldata <- as.data.frame(colData(gliomas_data))
+# coldata <- coldata$progression_or_recurrence
 
-
-write.table(coldata, file="coldata.csv", sep = ",", row.names=FALSE)
+# write.table(coldata, file="coldata.csv", sep = ",", row.names=FALSE)
 
 all(rownames(coldata) %in% colnames(gliomas_data_assay))
 
@@ -54,3 +54,28 @@ dds <- DESeqDataSetFromMatrix(
   countData=gliomas_data_assay,
   colData=coldata,
   design=~progression_or_recurrence)
+
+# remove genes with less than 10 reads across all samples
+keep <- rowSums(counts(dds) >= 5)
+dds <- dds[keep,]
+
+# set factor level
+dds$progression_or_recurrence <- relevel(dds$progression_or_recurrence, ref = 'no')
+
+
+# run deseq function
+dds <- DESeq(dds)
+res <- results(dds, pAdjustMethod = "none", alpha = "0.3")
+
+summary(res)
+
+head(res)
+# ordered_res <- res[order(res$padj),]
+# head(ordered_res)
+
+results <- list(coldata = coldata, gliomas_data_assay = gliomas_data_assay, 
+        gene_metadata = gene_metadata, res = res, dds = dds)
+saveRDS (file = 'results.RDS', results)
+
+data <- readRDS('results.RDS')
+print(data$dds)
